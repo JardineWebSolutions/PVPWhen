@@ -92,7 +92,14 @@ local function CreateCheckbox(parent, text, key, y)
     local cb = CreateFrame("CheckButton", nil, parent)
     cb:SetWidth(20)
     cb:SetHeight(20)
-    cb:SetPoint("TOPLEFT", 20, y)
+    cb:SetPoint("TOPLEFT", parent, "TOPLEFT", 20, y)
+    
+    -- Set checkbox textures for visibility
+    cb:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
+    cb:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
+    cb:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
+    cb:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+    cb:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
     
     -- Create the text label
     local cbText = cb:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -106,11 +113,20 @@ local function CreateCheckbox(parent, text, key, y)
     end)
 end
 
+-- Add title
+local title = panel:CreateFontString(nil, "OVERLAY", "GameFontBold")
+title:SetPoint("TOP", panel, "TOP", 0, -10)
+title:SetText("BGAuto Settings")
+
 -- Add per-BG checkboxes
 CreateCheckbox(panel, "Warsong Gulch", "wsg", -30)
 CreateCheckbox(panel, "Arathi Basin", "ab", -55)
 CreateCheckbox(panel, "Alterac Valley", "av", -80)
 CreateCheckbox(panel, "Sunnyvale Glade", "sunny", -105)
+
+-- Add close button
+local closeBtn = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
+closeBtn:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -5, -5)
 
 -- Slash command to toggle panel
 SLASH_BGAUTO1 = "/bgauto"
