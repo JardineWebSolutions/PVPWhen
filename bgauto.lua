@@ -177,20 +177,25 @@ end
 --====================================================
 -- Automatic queue engine
 --====================================================
+local BG_ORDER = {"wsg", "ab", "av", "tg"}
+local ARENA_ORDER = {"rated2v2", "rated3v3", "rated5v5", "skirmish"}
+
 local function TryQueue()
     if not BGAutoDB.enabled then return end
     if queueStep ~= "idle" then return end
 
-    for key, enabled in pairs(BGAutoDB.arenas) do
-        if enabled then
-            QueueArena(key)
+    -- Check BGs in fixed order
+    for _, key in ipairs(BG_ORDER) do
+        if BGAutoDB.bgs[key] then
+            QueueBG(key)
             return
         end
     end
 
-    for key, enabled in pairs(BGAutoDB.bgs) do
-        if enabled then
-            QueueBG(key)
+    -- Check arenas in fixed order
+    for _, key in ipairs(ARENA_ORDER) do
+        if BGAutoDB.arenas[key] then
+            QueueArena(key)
             return
         end
     end
