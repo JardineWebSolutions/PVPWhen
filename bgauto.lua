@@ -125,8 +125,16 @@ CreateCheckbox(panel, "Alterac Valley", "av", -80)
 CreateCheckbox(panel, "Sunnyvale Glade", "sunny", -105)
 
 -- Add close button
-local closeBtn = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
+local closeBtn = CreateFrame("Button", nil, panel)
+closeBtn:SetWidth(16)
+closeBtn:SetHeight(16)
 closeBtn:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -5, -5)
+closeBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+closeBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+closeBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+closeBtn:SetScript("OnClick", function()
+    panel:Hide()
+end)
 
 -- Slash command to toggle panel
 SLASH_BGAUTO1 = "/bgauto"
