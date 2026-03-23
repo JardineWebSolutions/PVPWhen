@@ -183,8 +183,6 @@ f:SetScript("OnEvent", function(self, event)
         return
     end
     
-    local frame = TWMiniMapBattlefieldFrame or _G["BattlefieldFrame"] or _G["BGFinderFrame"]
-    
     -- Check if we're waiting to click Join button or select arena type
     if queueTimer > 0 and GetTime() >= queueTimer then
         queueTimer = 0
@@ -200,43 +198,120 @@ f:SetScript("OnEvent", function(self, event)
                     if btnText and btnText == arenaType then
                         b:Click()
                         found = true
-                        queueTimer = GetTime() + 0.3
-                        queueMode = "none"
+                        queueTimer = GetTime() + 0.5
+                        queueMode = "arena_waiting"
                         return
                     end
                 end
             end
             if not found then
                 print("BGAuto: Could not find '" .. arenaType .. "' in arena submenu")
-                if frame then
-                    frame:Hide()
-                end
             end
         else
-            -- Normal BG queueing - find the join button
-            local joinBtn = frame and (frame.BattlefieldFrameJoinButton or frame.JoinButton or frame.ConfirmButton)
-            if joinBtn then
-                joinBtn:Click()
-            end
-            if frame then
-                frame:Hide()
-            end
-            queueMode = "none"
+            -- Normal BG queueing - we've clicked the BG, now wait for window to open
+            queueMode = "bg_waiting"
+            queueTimer = GetTime() + 0.5
+            return
         end
         return
     end
     
-    -- Check if we need to click Join after arena selection
-    if queueTimer == 0 and queueMode ~= "none" then
-        queueTimer = 0
-        local joinBtn = frame and (frame.BattlefieldFrameJoinButton or frame.JoinButton or frame.ConfirmButton)
+    -- Check if we're waiting for BG window to open so we can click Join
+    if queueMode == "bg_waiting" and GetTime() >= queueTimer then
+        -- Search for any visible frame with a button containing "Join" text
+        local joinBtn = nil
+        local bgWindow = nil
+        for i=1, 100 do
+            local btn = _G["BattlefieldInstanceButton"..i] or _G["BattlegroundQueueButton"..i] or _G["JoinBattleButton"..i]
+            if btn and btn:IsVisible() then
+                joinBtn = btn
+                break
+            end
+        end
+        
+        -- Try to find by searching through all visible frames for "Join Battle" button
+        if not joinBtn then
+            for key, frame in pairs(_G) do
+                if type(frame) == "table" and frame.GetChildren then
+                    for _, child in ipairs({frame:GetChildren()}) do
+                        if child.GetText and child:GetText() and child:GetText():find("Join") then
+                            joinBtn = child
+                            bgWindow = frame
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        
         if joinBtn then
             joinBtn:Click()
+            print("BGAuto: Queued successfully!")
+            queueMode = "none"
+            queueTimer = 0
+            -- Hide the BG window after clicking
+            if bgWindow then
+                bgWindow:Hide()
+            end
+            -- Hide the dropdown menu
+            local frame = TWMiniMapBattlefieldFrame or _G["BattlefieldFrame"] or _G["BGFinderFrame"]
+            if frame then frame:Hide() end
+        else
+            -- Wait a bit longer for window to open
+            if GetTime() - queueTimer < 2 then
+                queueTimer = GetTime() + 0.2
+            else
+                print("BGAuto: Timeout waiting for BG window to open")
+                queueMode = "none"
+                queueTimer = 0
+                -- Hide frames on timeout
+                local frame = TWMiniMapBattlefieldFrame or _G["BattlefieldFrame"] or _G["BGFinderFrame"]
+                if frame then frame:Hide() end
+            end
         end
-        if frame then
-            frame:Hide()
+        return
+    end
+    
+    -- Check if we're waiting for arena window to open
+    if queueMode == "arena_waiting" and GetTime() >= queueTimer then
+        local joinBtn = nil
+        local arenaWindow = nil
+        for key, frame in pairs(_G) do
+            if type(frame) == "table" and frame.GetChildren then
+                for _, child in ipairs({frame:GetChildren()}) do
+                    if child.GetText and child:GetText() and child:GetText():find("Join") then
+                        joinBtn = child
+                        arenaWindow = frame
+                        break
+                    end
+                end
+            end
         end
-        queueMode = "none"
+        
+        if joinBtn then
+            joinBtn:Click()
+            print("BGAuto: Queued for arena successfully!")
+            queueMode = "none"
+            queueTimer = 0
+            -- Hide the arena window after clicking
+            if arenaWindow then
+                arenaWindow:Hide()
+            end
+            -- Hide the dropdown menu
+            local frame = TWMiniMapBattlefieldFrame or _G["BattlefieldFrame"] or _G["BGFinderFrame"]
+            if frame then frame:Hide() end
+        else
+            if GetTime() - queueTimer < 2 then
+                queueTimer = GetTime() + 0.2
+            else
+                print("BGAuto: Timeout waiting for arena window to open")
+                queueMode = "none"
+                queueTimer = 0
+                -- Hide frames on timeout
+                local frame = TWMiniMapBattlefieldFrame or _G["BattlefieldFrame"] or _G["BGFinderFrame"]
+                if frame then frame:Hide() end
+            end
+        end
         return
     end
     
