@@ -29,12 +29,18 @@ if not BGAutoDB.arenas then
     }
 end
 
--- Map BG keys to dropdown text
+-- Map BG keys to dropdown text and DropDownList1 button index
 local BG_NAMES = {
     wsg = "Warsong Gulch",
     ab = "Arathi Basin",
     av = "Alterac Valley",
     tg = "Thorn Gorge",
+}
+local BG_INDICES = {
+    wsg = 4,
+    ab = 5,
+    av = 6,
+    tg = 7,
 }
 
 --====================================================
@@ -61,69 +67,59 @@ local function OpenDropdown()
 end
 
 --====================================================
--- Step 2: Click a BG name in DropDownList1
+-- Step 2: Click a BG in DropDownList1 by index
 --====================================================
-local function ClickDropdownBG(name)
-    for i = 1, 20 do
-        local b = _G["DropDownList1Button" .. i]
-        if b and b:IsVisible() then
-            local txt = b:GetText()
-            if txt and txt == name then
-                b:Click()
-                return true
-            end
-        end
+local function ClickDropdownBG(bgKey)
+    local idx = BG_INDICES[bgKey]
+    if not idx then
+        print("BGAuto: Unknown BG key: " .. bgKey)
+        return false
     end
-    print("BGAuto: Could not find '" .. name .. "' in dropdown")
+    local b = _G["DropDownList1Button" .. idx]
+    if b and b:IsVisible() then
+        b:Click()
+        return true
+    end
+    print("BGAuto: DropDownList1Button" .. idx .. " not found")
     return false
 end
 
 --====================================================
--- Step 2a: Click "Arena" in DropDownList1
+-- Step 2a: Click "Arena" in DropDownList1 (index 3)
 --====================================================
 local function ClickArenaDropdown()
-    for i = 1, 20 do
-        local b = _G["DropDownList1Button" .. i]
-        if b and b:IsVisible() then
-            local txt = b:GetText()
-            if txt and txt == "Arena" then
-                b:Click()
-                return true
-            end
-        end
+    local b = _G["DropDownList1Button3"]
+    if b and b:IsVisible() then
+        b:Click()
+        return true
     end
-    print("BGAuto: Could not find 'Arena' in dropdown")
+    print("BGAuto: DropDownList1Button3 (Arena) not found")
     return false
 end
 
--- Map arena keys to their dropdown text
-local ARENA_NAMES = {
-    rated2v2 = "Rated (2v2)",
-    rated3v3 = "Rated (3v3)",
-    rated5v5 = "Rated (5v5)",
-    skirmish = "Skirmish",
+-- Map arena keys to DropDownList2 button indices
+local ARENA_INDICES = {
+    rated2v2 = 1,
+    rated3v3 = 2,
+    rated5v5 = 3,
+    skirmish = 5,
 }
 
 --====================================================
--- Step 2b: Click arena type in DropDownList2
+-- Step 2b: Click arena type in DropDownList2 by index
 --====================================================
 local function ClickArenaType(arenaKey)
-    local targetName = ARENA_NAMES[arenaKey]
-    if not targetName then
+    local idx = ARENA_INDICES[arenaKey]
+    if not idx then
         print("BGAuto: Unknown arena key: " .. arenaKey)
         return false
     end
-    for i = 1, 20 do
-        local b = _G["DropDownList2Button" .. i]
-        if b and b:IsVisible() then
-            local txt = b:GetText()
-            if txt and txt == targetName then
-                b:Click()
-                return true
-            end
-        end
+    local b = _G["DropDownList2Button" .. idx]
+    if b and b:IsVisible() then
+        b:Click()
+        return true
     end
-    print("BGAuto: Could not find '" .. targetName .. "' in arena submenu")
+    print("BGAuto: DropDownList2Button" .. idx .. " not found")
     return false
 end
 
@@ -210,7 +206,7 @@ ticker:SetScript("OnUpdate", function()
     if GetTime() < queueTimerEnd then return end
 
     if queueStep == "bg_select" then
-        if ClickDropdownBG(BG_NAMES[queueTarget]) then
+        if ClickDropdownBG(queueTarget) then
             queueStep = "bg_join"
             StartTimer(0.5)
         else
