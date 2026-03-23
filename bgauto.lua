@@ -114,7 +114,7 @@ local function CreateCheckbox(parent, text, key, y)
 end
 
 -- Add title
-local title = panel:CreateFontString(nil, "OVERLAY", "GameFontBold")
+local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 title:SetPoint("TOP", panel, "TOP", 0, -10)
 title:SetText("BGAuto Settings")
 
