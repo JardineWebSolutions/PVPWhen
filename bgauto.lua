@@ -37,14 +37,6 @@ local BG_NAMES = {
     tg = "Thorn Gorge",
 }
 
--- Arena submenu button indices in DropDownList2
-local ARENA_BUTTONS = {
-    rated2v2 = 1,
-    rated3v3 = 2,
-    rated5v5 = 3,
-    skirmish = 5,
-}
-
 --====================================================
 -- Queue state
 --====================================================
@@ -87,33 +79,51 @@ local function ClickDropdownBG(name)
 end
 
 --====================================================
--- Step 2a: Click "Arena" in DropDownList1 (button 3)
+-- Step 2a: Click "Arena" in DropDownList1
 --====================================================
 local function ClickArenaDropdown()
-    local b = _G["DropDownList1Button3"]
-    if b and b:IsVisible() then
-        b:Click()
-        return true
+    for i = 1, 20 do
+        local b = _G["DropDownList1Button" .. i]
+        if b and b:IsVisible() then
+            local txt = b:GetText()
+            if txt and txt == "Arena" then
+                b:Click()
+                return true
+            end
+        end
     end
-    print("BGAuto: Could not find Arena in dropdown")
+    print("BGAuto: Could not find 'Arena' in dropdown")
     return false
 end
+
+-- Map arena keys to their dropdown text
+local ARENA_NAMES = {
+    rated2v2 = "Rated (2v2)",
+    rated3v3 = "Rated (3v3)",
+    rated5v5 = "Rated (5v5)",
+    skirmish = "Skirmish",
+}
 
 --====================================================
 -- Step 2b: Click arena type in DropDownList2
 --====================================================
 local function ClickArenaType(arenaKey)
-    local idx = ARENA_BUTTONS[arenaKey]
-    if not idx then
+    local targetName = ARENA_NAMES[arenaKey]
+    if not targetName then
         print("BGAuto: Unknown arena key: " .. arenaKey)
         return false
     end
-    local b = _G["DropDownList2Button" .. idx]
-    if b and b:IsVisible() then
-        b:Click()
-        return true
+    for i = 1, 20 do
+        local b = _G["DropDownList2Button" .. i]
+        if b and b:IsVisible() then
+            local txt = b:GetText()
+            if txt and txt == targetName then
+                b:Click()
+                return true
+            end
+        end
     end
-    print("BGAuto: Could not find arena button at index " .. idx)
+    print("BGAuto: Could not find '" .. targetName .. "' in arena submenu")
     return false
 end
 
@@ -293,6 +303,9 @@ local function CreateCheckbox(parent, text, dbTable, key, y)
 
     cb:SetScript("OnClick", function()
         dbTable[key] = cb:GetChecked()
+        if cb:GetChecked() then
+            TryQueue()
+        end
     end)
 end
 
