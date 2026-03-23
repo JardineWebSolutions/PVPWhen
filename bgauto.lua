@@ -45,7 +45,7 @@ local function SelectBGByName(name, mode)
         print("BGAuto: Could not find battlefield frame!")
         print("BGAuto: Available frames:")
         for key in pairs(_G) do
-            if key:lower():find("battle") or key:lower():find("queue") or key:lower():find("arena") then
+            if string.find(strlower(key), "battle") or string.find(strlower(key), "queue") or string.find(strlower(key), "arena") then
                 print("  - " .. key)
             end
         end
@@ -188,8 +188,8 @@ f:SetScript("OnEvent", function(self, event)
         queueTimer = 0
         
         -- Handle arena submenu selection
-        if queueMode:sub(1, 6) == "arena:" then
-            local arenaType = queueMode:sub(8)
+        if string.sub(queueMode, 1, 6) == "arena:" then
+            local arenaType = string.sub(queueMode, 8)
             local found = false
             for i=1, 50 do
                 local b = _G["DropDownList1Button"..i]
@@ -234,7 +234,7 @@ f:SetScript("OnEvent", function(self, event)
             for key, frame in pairs(_G) do
                 if type(frame) == "table" and frame.GetChildren then
                     for _, child in ipairs({frame:GetChildren()}) do
-                        if child.GetText and child:GetText() and child:GetText():find("Join") then
+                        if child.GetText and child:GetText() and string.find(child:GetText(), "Join") then
                             joinBtn = child
                             bgWindow = frame
                             break
@@ -279,7 +279,7 @@ f:SetScript("OnEvent", function(self, event)
         for key, frame in pairs(_G) do
             if type(frame) == "table" and frame.GetChildren then
                 for _, child in ipairs({frame:GetChildren()}) do
-                    if child.GetText and child:GetText() and child:GetText():find("Join") then
+                    if child.GetText and child:GetText() and string.find(child:GetText(), "Join") then
                         joinBtn = child
                         arenaWindow = frame
                         break
@@ -461,8 +461,8 @@ SlashCmdList["BGAUTODEBUG"] = function()
     
     local battleframes = {}
     for key in pairs(_G) do
-        local lower = key:lower()
-        if lower:find("battle") or lower:find("queue") or lower:find("arena") or lower:find("bg") or lower:find("finder") then
+        local lower = strlower(key)
+        if string.find(lower, "battle") or string.find(lower, "queue") or string.find(lower, "arena") or string.find(lower, "bg") or string.find(lower, "finder") then
             table.insert(battleframes, key)
         end
     end
@@ -475,10 +475,11 @@ SlashCmdList["BGAUTODEBUG"] = function()
     print("=== Looking for visible buttons ===")
     for key in pairs(_G) do
         local obj = _G[key]
-        if type(obj) == "table" and obj.IsVisible then
-            if obj:IsVisible() and obj.GetText then
-                local success, txt = pcall(function() return obj:GetText() end)
-                if success and txt and (txt:find("Queue") or txt:find("Join") or txt:find("Finder")) then
+        if type(obj) == "table" and obj.IsVisible and obj.GetText then
+            local visible = obj:IsVisible()
+            if visible then
+                local txt = obj:GetText()
+                if txt and (string.find(txt, "Queue") or string.find(txt, "Join") or string.find(txt, "Finder")) then
                     print("  Visible: " .. key .. " = '" .. txt .. "'")
                 end
             end
