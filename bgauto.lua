@@ -453,25 +453,42 @@ SlashCmdList["BGAUTO"] = function()
     end
 end
 
--- Debug slash command
+-- Debug slash command - prints 10 results at a time, use /bgautodebug again for next page
+BGAutoDebugPage = 0
+BGAutoDebugResults = {}
+
 SLASH_BGAUTODEBUG1 = "/bgautodebug"
 SlashCmdList["BGAUTODEBUG"] = function()
-    print("=== BGAuto Debug ===")
-    
-    local battleframes = {}
-    for key in pairs(_G) do
-        local lower = strlower(key)
-        if string.find(lower, "battlefield") or string.find(lower, "battleground") or string.find(lower, "bgfinder") or string.find(lower, "twminimap") then
-            table.insert(battleframes, key)
+    if getn(BGAutoDebugResults) == 0 then
+        BGAutoDebugPage = 0
+        for key in pairs(_G) do
+            local lower = strlower(key)
+            if string.find(lower, "battlefield") or string.find(lower, "battleground") or string.find(lower, "bgfinder") or string.find(lower, "twminimap") then
+                table.insert(BGAutoDebugResults, key)
+            end
         end
+        table.sort(BGAutoDebugResults)
+        print("BGAuto: Found " .. getn(BGAutoDebugResults) .. " frames. Showing 10 at a time:")
     end
     
-    table.sort(battleframes)
-    for _, name in ipairs(battleframes) do
-        print("  " .. name)
+    local startIdx = BGAutoDebugPage * 10 + 1
+    local endIdx = startIdx + 9
+    if endIdx > getn(BGAutoDebugResults) then
+        endIdx = getn(BGAutoDebugResults)
     end
     
-    print("=== Done ===")
+    for i = startIdx, endIdx do
+        print(i .. ": " .. BGAutoDebugResults[i])
+    end
+    
+    BGAutoDebugPage = BGAutoDebugPage + 1
+    
+    if endIdx >= getn(BGAutoDebugResults) then
+        print("=== End of list ===")
+        BGAutoDebugResults = {}
+    else
+        print("--- Type /bgautodebug for next page ---")
+    end
 end
 
 --====================================================
