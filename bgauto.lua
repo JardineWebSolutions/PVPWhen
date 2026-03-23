@@ -37,13 +37,30 @@ local queueMode = "none" -- Track what we're queueing for
 
 local function SelectBGByName(name, mode)
     mode = mode or "bg"
-    if not TWMiniMapBattlefieldFrame or not TWMiniMapBattlefieldFrame.BGFinderQueueButton then
-        print("BGAuto: TWMiniMapBattlefieldFrame not found!")
+    
+    -- Try to find the battlefield frame using different names
+    local frame = TWMiniMapBattlefieldFrame or _G["BattlefieldFrame"] or _G["BGFinderFrame"]
+    
+    if not frame then
+        print("BGAuto: Could not find battlefield frame!")
+        print("BGAuto: Available frames:")
+        for key in pairs(_G) do
+            if key:lower():find("battle") or key:lower():find("queue") or key:lower():find("arena") then
+                print("  - " .. key)
+            end
+        end
+        return
+    end
+    
+    local queueButton = frame.BGFinderQueueButton or frame.QueueButton or frame.FindButton
+    
+    if not queueButton then
+        print("BGAuto: Could not find queue button in battlefield frame!")
         return
     end
 
     -- Open minimap finder
-    TWMiniMapBattlefieldFrame.BGFinderQueueButton:Click()
+    queueButton:Click()
 
     -- Search through all dropdown buttons (expanded range to handle nested menus)
     local found = false
@@ -63,18 +80,28 @@ local function SelectBGByName(name, mode)
 
     if not found then
         print("BGAuto: Could not find '" .. name .. "' in queue menu")
-        TWMiniMapBattlefieldFrame:Hide()
+        if frame then frame:Hide() end
     end
 end
 
 local function SelectArenaType(arenaType)
-    if not TWMiniMapBattlefieldFrame or not TWMiniMapBattlefieldFrame.BGFinderQueueButton then
-        print("BGAuto: TWMiniMapBattlefieldFrame not found!")
+    -- Try to find the battlefield frame using different names
+    local frame = TWMiniMapBattlefieldFrame or _G["BattlefieldFrame"] or _G["BGFinderFrame"]
+    
+    if not frame then
+        print("BGAuto: Could not find battlefield frame for arena!")
+        return
+    end
+
+    local queueButton = frame.BGFinderQueueButton or frame.QueueButton or frame.FindButton
+    
+    if not queueButton then
+        print("BGAuto: Could not find queue button in battlefield frame!")
         return
     end
 
     -- Open minimap finder
-    TWMiniMapBattlefieldFrame.BGFinderQueueButton:Click()
+    queueButton:Click()
 
     -- First, click on "Arenas" to open the submenu
     local found = false
@@ -94,7 +121,7 @@ local function SelectArenaType(arenaType)
 
     if not found then
         print("BGAuto: Could not find 'Arenas' in queue menu")
-        TWMiniMapBattlefieldFrame:Hide()
+        if frame then frame:Hide() end
     end
 end
 
@@ -156,6 +183,8 @@ f:SetScript("OnEvent", function(self, event)
         return
     end
     
+    local frame = TWMiniMapBattlefieldFrame or _G["BattlefieldFrame"] or _G["BGFinderFrame"]
+    
     -- Check if we're waiting to click Join button or select arena type
     if queueTimer > 0 and GetTime() >= queueTimer then
         queueTimer = 0
@@ -179,17 +208,18 @@ f:SetScript("OnEvent", function(self, event)
             end
             if not found then
                 print("BGAuto: Could not find '" .. arenaType .. "' in arena submenu")
-                if TWMiniMapBattlefieldFrame then
-                    TWMiniMapBattlefieldFrame:Hide()
+                if frame then
+                    frame:Hide()
                 end
             end
         else
-            -- Normal BG queueing
-            if TWMiniMapBattlefieldFrame and TWMiniMapBattlefieldFrame.BattlefieldFrameJoinButton then
-                TWMiniMapBattlefieldFrame.BattlefieldFrameJoinButton:Click()
+            -- Normal BG queueing - find the join button
+            local joinBtn = frame and (frame.BattlefieldFrameJoinButton or frame.JoinButton or frame.ConfirmButton)
+            if joinBtn then
+                joinBtn:Click()
             end
-            if TWMiniMapBattlefieldFrame then
-                TWMiniMapBattlefieldFrame:Hide()
+            if frame then
+                frame:Hide()
             end
             queueMode = "none"
         end
@@ -199,11 +229,12 @@ f:SetScript("OnEvent", function(self, event)
     -- Check if we need to click Join after arena selection
     if queueTimer == 0 and queueMode ~= "none" then
         queueTimer = 0
-        if TWMiniMapBattlefieldFrame and TWMiniMapBattlefieldFrame.BattlefieldFrameJoinButton then
-            TWMiniMapBattlefieldFrame.BattlefieldFrameJoinButton:Click()
+        local joinBtn = frame and (frame.BattlefieldFrameJoinButton or frame.JoinButton or frame.ConfirmButton)
+        if joinBtn then
+            joinBtn:Click()
         end
-        if TWMiniMapBattlefieldFrame then
-            TWMiniMapBattlefieldFrame:Hide()
+        if frame then
+            frame:Hide()
         end
         queueMode = "none"
         return
