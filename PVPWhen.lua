@@ -178,11 +178,19 @@ end)
 -- Settings panel
 --====================================================
 local panel = CreateFrame("Frame", "PVPWhenPanel", UIParent)
-panel:SetWidth(220)
-panel:SetHeight(300)
+panel:SetWidth(250)
+panel:SetHeight(340)
 panel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-panel:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background"})
-panel:SetBackdropColor(0, 0, 0, 0.8)
+panel:SetBackdrop({
+    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true,
+    tileSize = 16,
+    edgeSize = 16,
+    insets = { left = 4, right = 4, top = 4, bottom = 4 },
+})
+panel:SetBackdropColor(0.05, 0.05, 0.1, 0.9)
+panel:SetBackdropBorderColor(0.6, 0.6, 0.8, 0.8)
 panel:EnableMouse(true)
 panel:SetMovable(true)
 panel:RegisterForDrag("LeftButton")
@@ -190,17 +198,72 @@ panel:SetScript("OnDragStart", function() panel:StartMoving() end)
 panel:SetScript("OnDragStop", function() panel:StopMovingOrSizing() end)
 panel:Hide()
 
--- Title
-local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-title:SetPoint("TOP", panel, "TOP", 0, -10)
-title:SetText("PVPWhen")
+-- Header bar
+local header = CreateFrame("Frame", nil, panel)
+header:SetWidth(242)
+header:SetHeight(28)
+header:SetPoint("TOP", panel, "TOP", 0, -4)
+header:SetBackdrop({
+    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true,
+    tileSize = 16,
+    edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+})
+header:SetBackdropColor(0.15, 0.1, 0.3, 1.0)
+header:SetBackdropBorderColor(0.5, 0.4, 0.7, 0.6)
 
--- Helper to create a styled checkbox
+-- Title with PVP icon
+local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+title:SetPoint("CENTER", header, "CENTER", 0, 0)
+title:SetText("|cffff8800PVPWhen|r")
+
+-- Close button (X)
+local closeBtn = CreateFrame("Button", nil, panel)
+closeBtn:SetWidth(20)
+closeBtn:SetHeight(20)
+closeBtn:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -6, -6)
+closeBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+closeBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+closeBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+closeBtn:SetScript("OnClick", function()
+    panel:Hide()
+end)
+
+-- Section label helper
+local function CreateSectionLabel(parent, text, y)
+    local bg = CreateFrame("Frame", nil, parent)
+    bg:SetWidth(220)
+    bg:SetHeight(18)
+    bg:SetPoint("TOP", parent, "TOP", 0, y)
+    bg:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    })
+    bg:SetBackdropColor(0.2, 0.15, 0.35, 0.7)
+
+    local label = bg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    label:SetPoint("LEFT", bg, "LEFT", 8, 0)
+    label:SetText("|cffffff00" .. text .. "|r")
+    return bg
+end
+
+-- Separator line helper
+local function CreateSeparator(parent, y)
+    local sep = parent:CreateTexture(nil, "ARTWORK")
+    sep:SetWidth(210)
+    sep:SetHeight(1)
+    sep:SetPoint("TOP", parent, "TOP", 0, y)
+    sep:SetTexture(0.4, 0.4, 0.5, 0.5)
+    return sep
+end
+
+-- Styled checkbox helper
 local function MakeCheckbox(parent, text, y)
     local cb = CreateFrame("CheckButton", nil, parent)
-    cb:SetWidth(20)
-    cb:SetHeight(20)
-    cb:SetPoint("TOPLEFT", parent, "TOPLEFT", 20, y)
+    cb:SetWidth(24)
+    cb:SetHeight(24)
+    cb:SetPoint("TOPLEFT", parent, "TOPLEFT", 22, y)
 
     cb:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
     cb:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
@@ -209,13 +272,15 @@ local function MakeCheckbox(parent, text, y)
     cb:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
 
     local cbText = cb:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    cbText:SetPoint("LEFT", cb, "RIGHT", 5, 0)
-    cbText:SetText(text)
+    cbText:SetPoint("LEFT", cb, "RIGHT", 6, 0)
+    cbText:SetText("|cffffffff" .. text .. "|r")
 
     return cb
 end
 
--- BG checkboxes
+-- Battlegrounds section
+CreateSectionLabel(panel, "Battlegrounds", -36)
+
 local function CreateBGCheckbox(parent, text, key, y)
     local cb = MakeCheckbox(parent, text, y)
     cb:SetChecked(PVPWhenDB.bgs[key] or false)
@@ -227,16 +292,14 @@ local function CreateBGCheckbox(parent, text, key, y)
     end)
 end
 
-CreateBGCheckbox(panel, "Warsong Gulch", "wsg", -30)
-CreateBGCheckbox(panel, "Arathi Basin", "ab", -55)
-CreateBGCheckbox(panel, "Alterac Valley", "av", -80)
+CreateBGCheckbox(panel, "Warsong Gulch", "wsg", -58)
+CreateBGCheckbox(panel, "Arathi Basin", "ab", -84)
+CreateBGCheckbox(panel, "Alterac Valley", "av", -110)
 
--- Arena label
-local arenaLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-arenaLabel:SetPoint("TOPLEFT", panel, "TOPLEFT", 20, -110)
-arenaLabel:SetText("Arenas:")
+-- Arenas section
+CreateSeparator(panel, -140)
+CreateSectionLabel(panel, "Arenas", -144)
 
--- Arena checkboxes
 local function CreateArenaCheckbox(parent, text, key, y)
     local cb = MakeCheckbox(parent, text, y)
     if not PVPWhenDB.arenas then PVPWhenDB.arenas = {} end
@@ -250,38 +313,41 @@ local function CreateArenaCheckbox(parent, text, key, y)
     end)
 end
 
-CreateArenaCheckbox(panel, "Skirmish", "skirmish", -130)
-CreateArenaCheckbox(panel, "Rated (2v2)", "rated2v2", -155)
-CreateArenaCheckbox(panel, "Rated (3v3)", "rated3v3", -180)
-CreateArenaCheckbox(panel, "Rated (5v5)", "rated5v5", -205)
+CreateArenaCheckbox(panel, "Skirmish", "skirmish", -166)
+CreateArenaCheckbox(panel, "Rated (2v2)", "rated2v2", -192)
+CreateArenaCheckbox(panel, "Rated (3v3)", "rated3v3", -218)
+CreateArenaCheckbox(panel, "Rated (5v5)", "rated5v5", -244)
 
 -- Queue All button
+CreateSeparator(panel, -274)
+
 local queueBtn = CreateFrame("Button", nil, panel)
-queueBtn:SetWidth(100)
-queueBtn:SetHeight(24)
-queueBtn:SetPoint("BOTTOM", panel, "BOTTOM", 0, 35)
-queueBtn:SetNormalTexture("Interface\\Buttons\\UI-DialogBox-Button-Up")
-queueBtn:SetPushedTexture("Interface\\Buttons\\UI-DialogBox-Button-Down")
-queueBtn:SetHighlightTexture("Interface\\Buttons\\UI-DialogBox-Button-Highlight")
+queueBtn:SetWidth(140)
+queueBtn:SetHeight(28)
+queueBtn:SetPoint("BOTTOM", panel, "BOTTOM", 0, 18)
+queueBtn:SetBackdrop({
+    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true,
+    tileSize = 16,
+    edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+})
+queueBtn:SetBackdropColor(0.1, 0.4, 0.1, 0.8)
+queueBtn:SetBackdropBorderColor(0.3, 0.7, 0.3, 0.8)
 
 local queueBtnText = queueBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 queueBtnText:SetPoint("CENTER", queueBtn, "CENTER", 0, 0)
-queueBtnText:SetText("Queue All")
+queueBtnText:SetText("|cffffffffQueue All|r")
 
+queueBtn:SetScript("OnEnter", function()
+    queueBtn:SetBackdropColor(0.15, 0.5, 0.15, 1.0)
+end)
+queueBtn:SetScript("OnLeave", function()
+    queueBtn:SetBackdropColor(0.1, 0.4, 0.1, 0.8)
+end)
 queueBtn:SetScript("OnClick", function()
     QueueAll()
-end)
-
--- Close button
-local closeBtn = CreateFrame("Button", nil, panel)
-closeBtn:SetWidth(16)
-closeBtn:SetHeight(16)
-closeBtn:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -5, -5)
-closeBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-closeBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-closeBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
-closeBtn:SetScript("OnClick", function()
-    panel:Hide()
 end)
 
 -- Slash commands
