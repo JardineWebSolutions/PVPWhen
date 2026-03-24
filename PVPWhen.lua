@@ -229,8 +229,10 @@ arenaLabel:SetText("Arenas:")
 -- Arena checkboxes
 local function CreateArenaCheckbox(parent, text, key, y)
     local cb = MakeCheckbox(parent, text, y)
+    if not PVPWhenDB.arenas then PVPWhenDB.arenas = {} end
     cb:SetChecked(PVPWhenDB.arenas[key] or false)
     cb:SetScript("OnClick", function()
+        if not PVPWhenDB.arenas then PVPWhenDB.arenas = {} end
         PVPWhenDB.arenas[key] = cb:GetChecked()
         if cb:GetChecked() then
             QueueArena(key)
