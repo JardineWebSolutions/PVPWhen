@@ -23,18 +23,25 @@ PVPWhenDB = PVPWhenDB or {
     }
 }
 
-if not PVPWhenDB.minimap then
-    PVPWhenDB.minimap = { show = true, angle = 200 }
-end
-
-if not PVPWhenDB.arenas then
-    PVPWhenDB.arenas = {
-        skirmish = false,
-        rated2v2 = false,
-        rated3v3 = false,
-        rated5v5 = false,
-    }
-end
+-- Fix up saved variables after they load
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("VARIABLES_LOADED")
+initFrame:SetScript("OnEvent", function()
+    if not PVPWhenDB.minimap then
+        PVPWhenDB.minimap = { show = true, angle = 200 }
+    end
+    if not PVPWhenDB.arenas then
+        PVPWhenDB.arenas = {
+            skirmish = false,
+            rated2v2 = false,
+            rated3v3 = false,
+            rated5v5 = false,
+        }
+    end
+    if _G["PVPWhenMinimapButton"] then
+        UpdateMinimapPosition()
+    end
+end)
 
 -- Arena API IDs for JoinArenaQueue
 local ARENA_IDS = {
@@ -389,6 +396,7 @@ overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
 overlay:SetPoint("TOPLEFT", minimapBtn, "TOPLEFT", 0, 0)
 
 local function UpdateMinimapPosition()
+    if not PVPWhenDB.minimap then PVPWhenDB.minimap = { angle = 200 } end
     local angle = math.rad(PVPWhenDB.minimap.angle or 200)
     local radius = 80
     local x = math.cos(angle) * radius
@@ -408,6 +416,7 @@ end)
 
 minimapBtn:SetScript("OnUpdate", function()
     if not isDragging then return end
+    if not PVPWhenDB.minimap then PVPWhenDB.minimap = { angle = 200 } end
     local mx, my = Minimap:GetCenter()
     local cx, cy = GetCursorPosition()
     local scale = Minimap:GetEffectiveScale()
