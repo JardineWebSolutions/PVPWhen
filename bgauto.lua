@@ -59,6 +59,8 @@ local BGQueueFrame = CreateFrame("Frame")
 local pendingQueue = {}
 local isQueueing = false
 
+local autoQueueActive = false
+
 local function HideBattlefieldFrame()
     if _G["BattlefieldFrame"] then
         _G["BattlefieldFrame"]:Hide()
@@ -84,6 +86,7 @@ local function ProcessNextQueue()
         local name = table.remove(pendingQueue, 1)
         if not IsAlreadyQueued(name) then
             isQueueing = true
+            autoQueueActive = true
             BGQueueFrame:UnregisterAllEvents()
             BGQueueFrame:RegisterEvent("BATTLEFIELDS_SHOW")
             BGQueueFrame:SetScript("OnEvent", function()
@@ -93,6 +96,7 @@ local function ProcessNextQueue()
                 HideBattlefieldFrame()
                 print("BGAuto: Queued for " .. name)
                 isQueueing = false
+                autoQueueActive = false
                 ProcessNextQueue()
             end)
             JoinBattlegroundQueue(name)
@@ -166,11 +170,13 @@ eventFrame:SetScript("OnEvent", function()
     QueueAll()
 end)
 
--- Hide the BattlefieldFrame whenever it opens (so AV window doesn't stay up)
+-- Only hide the BattlefieldFrame when the addon is auto-queueing
 local hideFrame = CreateFrame("Frame")
 hideFrame:RegisterEvent("BATTLEFIELDS_SHOW")
 hideFrame:SetScript("OnEvent", function()
-    HideBattlefieldFrame()
+    if autoQueueActive then
+        HideBattlefieldFrame()
+    end
 end)
 
 --====================================================
