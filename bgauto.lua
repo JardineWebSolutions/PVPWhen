@@ -52,23 +52,59 @@ local ARENA_DISPLAY_NAMES = {
 }
 
 --====================================================
--- Queue frame for handling BATTLEFIELDS_SHOW
+-- Queue system: processes one BG at a time
 --====================================================
 local BGQueueFrame = CreateFrame("Frame")
+local pendingQueue = {}
+local isQueueing = false
 
-local function QueueBattleground(name)
-    BGQueueFrame:UnregisterAllEvents()
-    BGQueueFrame:RegisterEvent("BATTLEFIELDS_SHOW")
-    BGQueueFrame:SetScript("OnEvent", function()
-        SetSelectedBattlefield(0)
-        JoinBattlefield(0)
-        BGQueueFrame:UnregisterEvent("BATTLEFIELDS_SHOW")
-        -- Hide the BG frame if it opened
-        if _G["BattlefieldFrame"] then
-            _G["BattlefieldFrame"]:Hide()
+local function HideBattlefieldFrame()
+    if _G["BattlefieldFrame"] then
+        _G["BattlefieldFrame"]:Hide()
+    end
+end
+
+-- Check if already queued for a specific BG name
+local function IsAlreadyQueued(bgName)
+    for i = 0, MAX_BATTLEFIELD_QUEUES do
+        local status, name = GetBattlefieldStatus(i)
+        if status and status ~= "none" and name == bgName then
+            return true
         end
-    end)
-    JoinBattlegroundQueue(name)
+    end
+    return false
+end
+
+-- Process the next item in the pending queue
+local function ProcessNextQueue()
+    if isQueueing then return end
+
+    while getn(pendingQueue) > 0 do
+        local name = table.remove(pendingQueue, 1)
+        if not IsAlreadyQueued(name) then
+            isQueueing = true
+            BGQueueFrame:UnregisterAllEvents()
+            BGQueueFrame:RegisterEvent("BATTLEFIELDS_SHOW")
+            BGQueueFrame:SetScript("OnEvent", function()
+                SetSelectedBattlefield(0)
+                JoinBattlefield(0)
+                BGQueueFrame:UnregisterEvent("BATTLEFIELDS_SHOW")
+                HideBattlefieldFrame()
+                print("BGAuto: Queued for " .. name)
+                isQueueing = false
+                ProcessNextQueue()
+            end)
+            JoinBattlegroundQueue(name)
+            return
+        end
+    end
+end
+
+-- Add a BG/arena to the pending queue
+local function QueueBattleground(name)
+    if IsAlreadyQueued(name) then return end
+    table.insert(pendingQueue, name)
+    ProcessNextQueue()
 end
 
 --====================================================
@@ -81,12 +117,10 @@ local function QueueBG(bgKey)
         return
     end
     QueueBattleground(name)
-    print("BGAuto: Queueing for " .. name)
 end
 
 --====================================================
 -- Queue a specific arena by key
--- TODO: Figure out the correct API call for arenas
 --====================================================
 local function QueueArena(arenaKey)
     local name = ARENA_DISPLAY_NAMES[arenaKey]
@@ -95,7 +129,6 @@ local function QueueArena(arenaKey)
         return
     end
     QueueBattleground(name)
-    print("BGAuto: Queueing for " .. name)
 end
 
 --====================================================
@@ -121,13 +154,20 @@ local function QueueAll()
 end
 
 --====================================================
--- Auto requeue on status change / entering world
+-- Auto requeue only when leaving a BG (entering world)
 --====================================================
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-eventFrame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 eventFrame:SetScript("OnEvent", function()
+    if isQueueing then return end
     QueueAll()
+end)
+
+-- Hide the BattlefieldFrame whenever it opens (so AV window doesn't stay up)
+local hideFrame = CreateFrame("Frame")
+hideFrame:RegisterEvent("BATTLEFIELDS_SHOW")
+hideFrame:SetScript("OnEvent", function()
+    HideBattlefieldFrame()
 end)
 
 --====================================================
