@@ -3,7 +3,7 @@
 -- Fully automatic BG queue using native API
 --========================================
 
--- SavedVariables
+-- SavedVariables (persists between sessions)
 BGAutoDB = BGAutoDB or {
     enabled = true,
     bgs = {
@@ -28,6 +28,7 @@ if not BGAutoDB.arenas then
         skirmish = false,
     }
 end
+
 
 -- BG API names (what JoinBattlegroundQueue expects)
 local BG_API_NAMES = {
@@ -154,12 +155,14 @@ local function QueueAll()
 end
 
 --====================================================
--- Auto requeue only when leaving a BG (entering world)
+-- ALWAYS keep queued for checked BGs
 --====================================================
 local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:SetScript("OnEvent", function()
     if isQueueing then return end
+    if GetNumPartyMembers() > 0 or GetNumRaidMembers() > 0 then return end
     QueueAll()
 end)
 
