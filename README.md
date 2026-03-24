@@ -23,9 +23,8 @@ PVPWhen keeps you queued for your chosen Battlegrounds and Arenas automatically.
 
 ## Installation
 
-1. Download or clone this repository.
-2. Copy the `PVPWhen` folder (containing `PVPWhen.toc` and `PVPWhen.lua`) into your `Interface\AddOns` directory.
-3. Restart the game or type `/reload` if you are already logged in.
+- **Option A** — Add the GitHub repo directly to your launcher's addon list.
+- **Option B** — Download and place the `PVPWhen` folder into your `Interface\AddOns` directory.
 
 ## Usage
 
@@ -46,10 +45,6 @@ PVPWhen keeps you queued for your chosen Battlegrounds and Arenas automatically.
 
 - **Left-click** — Toggle the settings panel.
 - **Right-click drag** — Move the icon around the minimap edge.
-
-### Debug
-
-Type `/pvpwhendebug` to print your current queue status to chat.
 
 ## How It Works
 
