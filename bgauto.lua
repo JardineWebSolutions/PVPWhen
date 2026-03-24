@@ -308,8 +308,8 @@ local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 title:SetPoint("TOP", panel, "TOP", 0, -10)
 title:SetText("BGAuto Settings")
 
--- Helper to create checkboxes
-local function CreateCheckbox(parent, text, dbTable, key, y)
+-- Helper to create a styled checkbox
+local function MakeCheckbox(parent, text, y)
     local cb = CreateFrame("CheckButton", nil, parent)
     cb:SetWidth(20)
     cb:SetHeight(20)
@@ -325,26 +325,25 @@ local function CreateCheckbox(parent, text, dbTable, key, y)
     cbText:SetPoint("LEFT", cb, "RIGHT", 5, 0)
     cbText:SetText(text)
 
-    cb:SetChecked(dbTable[key] or false)
+    return cb
+end
 
+-- BG checkboxes
+local function CreateBGCheckbox(parent, text, key, y)
+    local cb = MakeCheckbox(parent, text, y)
+    cb:SetChecked(BGAutoDB.bgs[key] or false)
     cb:SetScript("OnClick", function()
-        dbTable[key] = cb:GetChecked()
-        if cb:GetChecked() then
-            -- Reset tracking so this new selection gets queued
-            alreadyQueued[key] = nil
-            TryQueueNext()
-        else
-            -- Unchecked, remove from tracking
-            alreadyQueued[key] = nil
+        BGAutoDB.bgs[key] = cb:GetChecked()
+        if cb:GetChecked() and queueStep == "idle" then
+            QueueBG(key)
         end
     end)
 end
 
--- BG checkboxes
-CreateCheckbox(panel, "Warsong Gulch", BGAutoDB.bgs, "wsg", -30)
-CreateCheckbox(panel, "Arathi Basin", BGAutoDB.bgs, "ab", -55)
-CreateCheckbox(panel, "Alterac Valley", BGAutoDB.bgs, "av", -80)
-CreateCheckbox(panel, "Thorn Gorge", BGAutoDB.bgs, "tg", -105)
+CreateBGCheckbox(panel, "Warsong Gulch", "wsg", -30)
+CreateBGCheckbox(panel, "Arathi Basin", "ab", -55)
+CreateBGCheckbox(panel, "Alterac Valley", "av", -80)
+CreateBGCheckbox(panel, "Thorn Gorge", "tg", -105)
 
 -- Arena label
 local arenaLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -352,10 +351,21 @@ arenaLabel:SetPoint("TOPLEFT", panel, "TOPLEFT", 20, -130)
 arenaLabel:SetText("Arenas:")
 
 -- Arena checkboxes
-CreateCheckbox(panel, "Rated (2v2)", BGAutoDB.arenas, "rated2v2", -150)
-CreateCheckbox(panel, "Rated (3v3)", BGAutoDB.arenas, "rated3v3", -175)
-CreateCheckbox(panel, "Rated (5v5)", BGAutoDB.arenas, "rated5v5", -200)
-CreateCheckbox(panel, "Skirmish", BGAutoDB.arenas, "skirmish", -225)
+local function CreateArenaCheckbox(parent, text, key, y)
+    local cb = MakeCheckbox(parent, text, y)
+    cb:SetChecked(BGAutoDB.arenas[key] or false)
+    cb:SetScript("OnClick", function()
+        BGAutoDB.arenas[key] = cb:GetChecked()
+        if cb:GetChecked() and queueStep == "idle" then
+            QueueArena(key)
+        end
+    end)
+end
+
+CreateArenaCheckbox(panel, "Rated (2v2)", "rated2v2", -150)
+CreateArenaCheckbox(panel, "Rated (3v3)", "rated3v3", -175)
+CreateArenaCheckbox(panel, "Rated (5v5)", "rated5v5", -200)
+CreateArenaCheckbox(panel, "Skirmish", "skirmish", -225)
 
 -- Queue Now button
 local queueBtn = CreateFrame("Button", nil, panel)
