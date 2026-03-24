@@ -213,7 +213,26 @@ panel:SetMovable(true)
 panel:RegisterForDrag("LeftButton")
 panel:SetScript("OnDragStart", function() panel:StartMoving() end)
 panel:SetScript("OnDragStop", function() panel:StopMovingOrSizing() end)
-panel:Hide()
+local panelRealShow = panel:GetScript("OnShow") or nil
+local panelAllowHide = true
+panel.ForceShow = function(self)
+    panelAllowHide = true
+    self:Show()
+end
+panel.ForceHide = function(self)
+    panelAllowHide = true
+    self:Hide()
+end
+
+local origHide = panel.Hide
+panel.Hide = function(self)
+    if panelAllowHide then
+        panelAllowHide = false
+        origHide(self)
+    end
+end
+
+panel:ForceHide()
 
 -- Header bar
 local header = CreateFrame("Frame", nil, panel)
