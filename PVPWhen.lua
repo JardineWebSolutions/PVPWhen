@@ -10,6 +10,7 @@ PVPWhenDB = PVPWhenDB or {
         wsg = false,
         ab = false,
         av = false,
+        tg = false,
     },
     arenas = {
         skirmish = false,
@@ -56,6 +57,7 @@ local BG_API_NAMES = {
     wsg = "Warsong Gulch",
     ab = "Arathi Basin",
     av = "Alterac Valley",
+    tg = "ThornGorge",
 }
 
 --====================================================
@@ -149,7 +151,7 @@ end
 --====================================================
 -- Queue all enabled BGs and arenas
 --====================================================
-local BG_ORDER = {"wsg", "ab", "av"}
+local BG_ORDER = {"wsg", "ab", "av", "tg"}
 local ARENA_ORDER = {"skirmish", "rated2v2", "rated3v3", "rated5v5"}
 
 local function QueueAll()
@@ -194,7 +196,7 @@ end)
 --====================================================
 local panel = CreateFrame("Frame", "PVPWhenPanel", UIParent)
 panel:SetWidth(250)
-panel:SetHeight(340)
+panel:SetHeight(370)
 panel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 panel:SetBackdrop({
     bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
@@ -310,10 +312,11 @@ end
 CreateBGCheckbox(panel, "Warsong Gulch", "wsg", -58)
 CreateBGCheckbox(panel, "Arathi Basin", "ab", -84)
 CreateBGCheckbox(panel, "Alterac Valley", "av", -110)
+CreateBGCheckbox(panel, "Thorn Gorge", "tg", -136)
 
 -- Arenas section
-CreateSeparator(panel, -140)
-CreateSectionLabel(panel, "Arenas", -144)
+CreateSeparator(panel, -166)
+CreateSectionLabel(panel, "Arenas", -170)
 
 local function CreateArenaCheckbox(parent, text, key, y)
     local cb = MakeCheckbox(parent, text, y)
@@ -328,13 +331,13 @@ local function CreateArenaCheckbox(parent, text, key, y)
     end)
 end
 
-CreateArenaCheckbox(panel, "Skirmish", "skirmish", -166)
-CreateArenaCheckbox(panel, "Rated (2v2)", "rated2v2", -192)
-CreateArenaCheckbox(panel, "Rated (3v3)", "rated3v3", -218)
-CreateArenaCheckbox(panel, "Rated (5v5)", "rated5v5", -244)
+CreateArenaCheckbox(panel, "Skirmish", "skirmish", -192)
+CreateArenaCheckbox(panel, "Rated (2v2)", "rated2v2", -218)
+CreateArenaCheckbox(panel, "Rated (3v3)", "rated3v3", -244)
+CreateArenaCheckbox(panel, "Rated (5v5)", "rated5v5", -270)
 
 -- Queue All button
-CreateSeparator(panel, -274)
+CreateSeparator(panel, -300)
 
 local queueBtn = CreateFrame("Button", nil, panel)
 queueBtn:SetWidth(140)
