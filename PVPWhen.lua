@@ -386,7 +386,7 @@ minimapBtn:RegisterForClicks("LeftButtonUp")
 local iconTexture = minimapBtn:CreateTexture(nil, "BACKGROUND")
 iconTexture:SetWidth(20)
 iconTexture:SetHeight(20)
-iconTexture:SetTexture("Interface\\Icons\\INV_Sword_48")
+iconTexture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 iconTexture:SetPoint("CENTER", minimapBtn, "CENTER", 0, 0)
 
 local overlay = minimapBtn:CreateTexture(nil, "OVERLAY")
