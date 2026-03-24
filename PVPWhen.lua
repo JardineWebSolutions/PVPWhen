@@ -117,8 +117,18 @@ local function QueueArena(arenaKey)
         print("PVPWhen: Unknown arena key: " .. arenaKey)
         return
     end
+    autoQueueActive = true
+    PVPWhenQueueFrame:UnregisterAllEvents()
+    PVPWhenQueueFrame:RegisterEvent("BATTLEFIELDS_SHOW")
+    PVPWhenQueueFrame:SetScript("OnEvent", function()
+        SetSelectedBattlefield(0)
+        JoinBattlefield(0)
+        PVPWhenQueueFrame:UnregisterEvent("BATTLEFIELDS_SHOW")
+        HideBattlefieldFrame()
+        print("PVPWhen: Queued for arena (" .. arenaKey .. ")")
+        autoQueueActive = false
+    end)
     JoinArenaQueue(id)
-    print("PVPWhen: Queued for arena (" .. arenaKey .. ")")
 end
 
 --====================================================
