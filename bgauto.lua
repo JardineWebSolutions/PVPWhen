@@ -1,6 +1,6 @@
 --========================================
 -- BGAuto.lua for Turtle WoW
--- Fully automatic BG queue with per-BG toggles
+-- Fully automatic BG queue using native API
 --========================================
 
 -- SavedVariables
@@ -29,262 +29,105 @@ if not BGAutoDB.arenas then
     }
 end
 
--- Map BG keys to dropdown text and DropDownList1 button index
-local BG_NAMES = {
+-- BG API names (what JoinBattlegroundQueue expects)
+local BG_API_NAMES = {
     wsg = "Warsong Gulch",
     ab = "Arathi Basin",
     av = "Alterac Valley",
     tg = "Thorn Gorge",
 }
-local BG_INDICES = {
-    wsg = 4,
-    ab = 5,
-    av = 6,
-    tg = 7,
+
+local BG_DISPLAY_NAMES = {
+    wsg = "Warsong Gulch",
+    ab = "Arathi Basin",
+    av = "Alterac Valley",
+    tg = "Thorn Gorge",
+}
+
+local ARENA_DISPLAY_NAMES = {
+    rated2v2 = "Rated (2v2)",
+    rated3v3 = "Rated (3v3)",
+    rated5v5 = "Rated (5v5)",
+    skirmish = "Skirmish",
 }
 
 --====================================================
--- Queue state
+-- Queue frame for handling BATTLEFIELDS_SHOW
 --====================================================
-local queueStep = "idle"
-local queueTarget = nil
-local queueTimerEnd = 0
+local BGQueueFrame = CreateFrame("Frame")
 
-local function StartTimer(seconds)
-    queueTimerEnd = GetTime() + seconds
+local function QueueBattleground(name)
+    BGQueueFrame:UnregisterAllEvents()
+    BGQueueFrame:RegisterEvent("BATTLEFIELDS_SHOW")
+    BGQueueFrame:SetScript("OnEvent", function()
+        SetSelectedBattlefield(0)
+        JoinBattlefield(0)
+        BGQueueFrame:UnregisterEvent("BATTLEFIELDS_SHOW")
+        -- Hide the BG frame if it opened
+        if _G["BattlefieldFrame"] then
+            _G["BattlefieldFrame"]:Hide()
+        end
+    end)
+    JoinBattlegroundQueue(name)
 end
 
 --====================================================
--- Step 1: Click TWMiniMapBattlefieldFrame to open dropdown
---====================================================
-local function OpenDropdown()
-    if not TWMiniMapBattlefieldFrame then
-        print("BGAuto: TWMiniMapBattlefieldFrame not found!")
-        return false
-    end
-    TWMiniMapBattlefieldFrame:Click("LeftButton")
-    return true
-end
-
---====================================================
--- Step 2: Click a BG in DropDownList1 by index
---====================================================
-local function ClickDropdownBG(bgKey)
-    local idx = BG_INDICES[bgKey]
-    if not idx then
-        print("BGAuto: Unknown BG key: " .. bgKey)
-        return false
-    end
-    local b = _G["DropDownList1Button" .. idx]
-    if b and b:IsVisible() then
-        b:Click()
-        return true
-    end
-    print("BGAuto: DropDownList1Button" .. idx .. " not found")
-    return false
-end
-
---====================================================
--- Step 2a: Click "Arena" in DropDownList1 (index 3)
---====================================================
-local function ClickArenaDropdown()
-    local b = _G["DropDownList1Button3"]
-    if b and b:IsVisible() then
-        b:Click()
-        return true
-    end
-    print("BGAuto: DropDownList1Button3 (Arena) not found")
-    return false
-end
-
--- Map arena keys to DropDownList2 button indices
-local ARENA_INDICES = {
-    rated2v2 = 1,
-    rated3v3 = 2,
-    rated5v5 = 3,
-    skirmish = 5,
-}
-
---====================================================
--- Step 2b: Click arena type in DropDownList2 by index
---====================================================
-local function ClickArenaType(arenaKey)
-    local idx = ARENA_INDICES[arenaKey]
-    if not idx then
-        print("BGAuto: Unknown arena key: " .. arenaKey)
-        return false
-    end
-    local b = _G["DropDownList2Button" .. idx]
-    if b and b:IsVisible() then
-        b:Click()
-        return true
-    end
-    print("BGAuto: DropDownList2Button" .. idx .. " not found")
-    return false
-end
-
---====================================================
--- Step 3: Click BattlefieldFrameJoinButton
---====================================================
-local function ClickJoinBattle()
-    local btn = _G["BattlefieldFrameJoinButton"]
-    if btn and btn:IsVisible() then
-        btn:Click()
-        return true
-    end
-    return false
-end
-
---====================================================
--- Hide all BG-related frames
---====================================================
-local function HideAllFrames()
-    if _G["BattlefieldFrame"] then
-        _G["BattlefieldFrame"]:Hide()
-    end
-    if _G["DropDownList1"] then
-        _G["DropDownList1"]:Hide()
-    end
-    if _G["DropDownList2"] then
-        _G["DropDownList2"]:Hide()
-    end
-end
-
---====================================================
--- Queue a BG by key
+-- Queue a specific BG by key
 --====================================================
 local function QueueBG(bgKey)
-    if not OpenDropdown() then return end
-    queueStep = "bg_select"
-    queueTarget = bgKey
-    StartTimer(1.0)
+    local name = BG_API_NAMES[bgKey]
+    if not name then
+        print("BGAuto: Unknown BG key: " .. bgKey)
+        return
+    end
+    QueueBattleground(name)
+    print("BGAuto: Queueing for " .. name)
 end
 
 --====================================================
--- Queue an arena by key
+-- Queue a specific arena by key
+-- TODO: Figure out the correct API call for arenas
 --====================================================
 local function QueueArena(arenaKey)
-    if not OpenDropdown() then return end
-    queueStep = "arena_open"
-    queueTarget = arenaKey
-    StartTimer(1.0)
+    local name = ARENA_DISPLAY_NAMES[arenaKey]
+    if not name then
+        print("BGAuto: Unknown arena key: " .. arenaKey)
+        return
+    end
+    QueueBattleground(name)
+    print("BGAuto: Queueing for " .. name)
 end
 
 --====================================================
--- Automatic queue engine
+-- Queue all enabled BGs and arenas
 --====================================================
 local BG_ORDER = {"wsg", "ab", "av", "tg"}
 local ARENA_ORDER = {"rated2v2", "rated3v3", "rated5v5", "skirmish"}
 
--- Track what we've already queued for so we don't double-queue
-local alreadyQueued = {}
-
-local function TryQueueNext()
+local function QueueAll()
     if not BGAutoDB.enabled then return end
-    if queueStep ~= "idle" then return end
 
-    -- Check BGs in fixed order, skip already queued
     for _, key in ipairs(BG_ORDER) do
-        if BGAutoDB.bgs[key] and not alreadyQueued[key] then
+        if BGAutoDB.bgs[key] then
             QueueBG(key)
-            return true
         end
     end
 
-    -- Check arenas in fixed order, skip already queued
     for _, key in ipairs(ARENA_ORDER) do
-        if BGAutoDB.arenas[key] and not alreadyQueued[key] then
+        if BGAutoDB.arenas[key] then
             QueueArena(key)
-            return true
         end
     end
-
-    return false
-end
-
-local function TryQueue()
-    alreadyQueued = {}
-    TryQueueNext()
 end
 
 --====================================================
--- OnUpdate handler for timed steps
+-- Auto requeue on status change / entering world
 --====================================================
-local ticker = CreateFrame("Frame")
-ticker:SetScript("OnUpdate", function()
-    if queueStep == "idle" then return end
-    if GetTime() < queueTimerEnd then return end
-
-    if queueStep == "bg_select" then
-        if ClickDropdownBG(queueTarget) then
-            queueStep = "bg_join"
-            StartTimer(0.5)
-        else
-            queueStep = "idle"
-            HideAllFrames()
-        end
-
-    elseif queueStep == "bg_join" then
-        if ClickJoinBattle() then
-            print("BGAuto: Queued for " .. BG_NAMES[queueTarget])
-            alreadyQueued[queueTarget] = true
-            queueStep = "idle"
-            HideAllFrames()
-            -- Queue next enabled BG/arena after a short delay
-            StartTimer(1.5)
-            queueStep = "chain_next"
-        else
-            StartTimer(0.2)
-        end
-
-    elseif queueStep == "chain_next" then
-        queueStep = "idle"
-        if not TryQueueNext() then
-            HideAllFrames()
-        end
-
-    elseif queueStep == "arena_open" then
-        if ClickArenaDropdown() then
-            queueStep = "arena_select"
-            StartTimer(1.0)
-        else
-            queueStep = "idle"
-            HideAllFrames()
-        end
-
-    elseif queueStep == "arena_select" then
-        if ClickArenaType(queueTarget) then
-            queueStep = "arena_join"
-            StartTimer(0.5)
-        else
-            queueStep = "idle"
-            HideAllFrames()
-        end
-
-    elseif queueStep == "arena_join" then
-        if ClickJoinBattle() then
-            print("BGAuto: Queued for arena")
-            alreadyQueued[queueTarget] = true
-            queueStep = "idle"
-            HideAllFrames()
-            -- Queue next enabled BG/arena after a short delay
-            StartTimer(1.5)
-            queueStep = "chain_next"
-        else
-            StartTimer(0.2)
-        end
-    end
-end)
-
---====================================================
--- Event handler for auto requeue
---====================================================
-local f = CreateFrame("Frame")
-f:RegisterEvent("PLAYER_ENTERING_WORLD")
-f:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
-f:SetScript("OnEvent", function()
-    -- Only queue things we haven't already queued this session
-    TryQueueNext()
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
+eventFrame:SetScript("OnEvent", function()
+    QueueAll()
 end)
 
 --====================================================
@@ -334,7 +177,7 @@ local function CreateBGCheckbox(parent, text, key, y)
     cb:SetChecked(BGAutoDB.bgs[key] or false)
     cb:SetScript("OnClick", function()
         BGAutoDB.bgs[key] = cb:GetChecked()
-        if cb:GetChecked() and queueStep == "idle" then
+        if cb:GetChecked() then
             QueueBG(key)
         end
     end)
@@ -356,7 +199,7 @@ local function CreateArenaCheckbox(parent, text, key, y)
     cb:SetChecked(BGAutoDB.arenas[key] or false)
     cb:SetScript("OnClick", function()
         BGAutoDB.arenas[key] = cb:GetChecked()
-        if cb:GetChecked() and queueStep == "idle" then
+        if cb:GetChecked() then
             QueueArena(key)
         end
     end)
@@ -367,7 +210,7 @@ CreateArenaCheckbox(panel, "Rated (3v3)", "rated3v3", -175)
 CreateArenaCheckbox(panel, "Rated (5v5)", "rated5v5", -200)
 CreateArenaCheckbox(panel, "Skirmish", "skirmish", -225)
 
--- Queue Now button
+-- Queue All button
 local queueBtn = CreateFrame("Button", nil, panel)
 queueBtn:SetWidth(100)
 queueBtn:SetHeight(24)
@@ -378,10 +221,10 @@ queueBtn:SetHighlightTexture("Interface\\Buttons\\UI-DialogBox-Button-Highlight"
 
 local queueBtnText = queueBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 queueBtnText:SetPoint("CENTER", queueBtn, "CENTER", 0, 0)
-queueBtnText:SetText("Queue Now")
+queueBtnText:SetText("Queue All")
 
 queueBtn:SetScript("OnClick", function()
-    TryQueue()
+    QueueAll()
 end)
 
 -- Close button
@@ -396,7 +239,7 @@ closeBtn:SetScript("OnClick", function()
     panel:Hide()
 end)
 
--- Slash command
+-- Slash commands
 SLASH_BGAUTO1 = "/bgauto"
 SlashCmdList["BGAUTO"] = function()
     if panel:IsShown() then
@@ -406,28 +249,17 @@ SlashCmdList["BGAUTO"] = function()
     end
 end
 
--- Debug command
+-- Debug: show current queue status
 SLASH_BGAUTODEBUG1 = "/bgautodebug"
 SlashCmdList["BGAUTODEBUG"] = function()
-    local frame = GetMouseFocus()
-    if frame then
-        local name = frame:GetName() or "unnamed"
-        local parent = frame:GetParent()
-        local parentName = "none"
-        if parent and parent.GetName then
-            parentName = parent:GetName() or "unnamed"
+    print("=== BGAuto Queue Status ===")
+    for i = 0, MAX_BATTLEFIELD_QUEUES do
+        local status, name = GetBattlefieldStatus(i)
+        if status and status ~= "none" then
+            print("  Slot " .. i .. ": " .. status .. " - " .. (name or "unknown"))
         end
-        print("Frame: " .. name)
-        print("Parent: " .. parentName)
-        if frame.GetText then
-            local txt = frame:GetText()
-            if txt then
-                print("Text: " .. txt)
-            end
-        end
-    else
-        print("No frame under cursor")
     end
+    print("=== Done ===")
 end
 
 print("BGAuto loaded. Type /bgauto to toggle settings.")
