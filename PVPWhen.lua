@@ -62,8 +62,12 @@ local isQueueing = false
 local autoQueueActive = false
 
 local function HideBattlefieldFrame()
+    local gameMenuWasShown = _G["GameMenuFrame"] and _G["GameMenuFrame"]:IsShown()
     if _G["BattlefieldFrame"] then
         _G["BattlefieldFrame"]:Hide()
+    end
+    if gameMenuWasShown and _G["GameMenuFrame"] and not _G["GameMenuFrame"]:IsShown() then
+        _G["GameMenuFrame"]:Show()
     end
 end
 
